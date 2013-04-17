@@ -5,6 +5,8 @@
 #include "cinder/Color.h"
 #include "cinder/gl/gl.h"
 
+#include <ppl.h>
+using namespace Concurrency;
 #include <list>
 using std::list;
 
@@ -88,13 +90,24 @@ void BasicParticleApp::update()
 		partIt->mLastPosition = partIt->mPosition;
 
 	// Add some perlin noise to the velocity
+#if 0
 	for( list<Particle>::iterator partIt = mParticles.begin(); partIt != mParticles.end(); ++partIt ) {
-		Vec3f deriv = mPerlin.dfBm( Vec3f( partIt->mPosition.x, partIt->mPosition.y, mAnimationCounter ) * 0.001f );
+    	Vec3f deriv = mPerlin.dfBm( Vec3f( partIt->mPosition.x, partIt->mPosition.y, mAnimationCounter ) * 0.001f );
 		partIt->mZ = deriv.z;
 		Vec2f deriv2( deriv.x, deriv.y );
 		deriv2.normalize();
 		partIt->mVelocity += deriv2 * SPEED;
 	}
+#else
+    parallel_for_each( mParticles.begin(), mParticles.end(), [&](Particle& particle) {
+		Vec3f deriv = mPerlin.dfBm( Vec3f( particle.mPosition.x, particle.mPosition.y, mAnimationCounter ) * 0.001f );
+		particle.mZ = deriv.z;
+		Vec2f deriv2( deriv.x, deriv.y );
+		deriv2.normalize();
+		particle.mVelocity += deriv2 * SPEED;
+	});
+
+#endif
 		
 	// Move the particles according to their velocities
 	for( list<Particle>::iterator partIt = mParticles.begin(); partIt != mParticles.end(); ++partIt )
